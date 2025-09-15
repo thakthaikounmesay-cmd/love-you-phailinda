@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>I LOVE YOU for PHOY</title>
+<style>
+body { margin:0; overflow:hidden; font-family: Arial, sans-serif; background:black; }
+canvas { display:block; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Background rain
+const numBg = 120;
+const bgTexts = [];
+for(let i=0;i<numBg;i++){
+    bgTexts.push({
+        text: "I LOVE YOU 💖",
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        speedY: 1 + Math.random()*2,
+        fontSize: 20 + Math.random()*15,
+        color: "rgba(255,182,193,0.6)",
+    });
+}
+
+// Foreground: ชื่อแฟน “PHOY 💖” ลอยมุด + สลับสี
+const numFg = 40;
+const fgTexts = [];
+const colors = ["#ff66cc", "#cc66ff", "#66ccff"]; // สลับ 3 สี
+for(let i=0;i<numFg;i++){
+    fgTexts.push({
+        text: "PHOY 💖",
+        x: Math.random()*canvas.width,
+        y: canvas.height + Math.random()*canvas.height,
+        baseSize: 40 + Math.random()*30,
+        phase: Math.random()*Math.PI*2,
+        speed: 0.05 + Math.random()*0.05,
+        riseSpeed: 1 + Math.random()*2,
+        alpha: 0,
+        colorIndex: Math.floor(Math.random()*colors.length),
+        colorStep: 0
+    });
+}
+
+// Floating Sparkles
+const numSparkles = 3;
+const sparkles = [];
+for(let i=0;i<numSparkles;i++){
+    sparkles.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        size: 5 + Math.random()*5,
+        speedY: 0.2 + Math.random()*0.3,
+        alpha: 0.5 + Math.random()*0.5
+    });
+}
+
+function drawFg(t){
+    t.y -= t.riseSpeed;
+    if(t.alpha < 1) t.alpha += 0.02;
+
+    // เปลี่ยนสีแบบสลับเรื่อย ๆ
+    t.colorStep += 0.02;
+    if(t.colorStep >= 1){
+        t.colorStep = 0;
+        t.colorIndex = (t.colorIndex + 1) % colors.length;
+    }
+
+    const nextColor = colors[(t.colorIndex+1)%colors.length];
+    // Linear interpolation ของสี
+    function lerpColor(a, b, t) {
+        const c1 = parseInt(a.slice(1,3),16);
+        const c2 = parseInt(b.slice(1,3),16);
+        const c3 = parseInt(a.slice(3,5),16);
+        const c4 = parseInt(b.slice(3,5),16);
+        const c5 = parseInt(a.slice(5,7),16);
+        const c6 = parseInt(b.slice(5,7),16);
+        const r = Math.round(c1 + (c2-c1)*t);
+        const g = Math.round(c3 + (c4-c3)*t);
+        const b_ = Math.round(c5 + (c6-c5)*t);
+        return `rgb(${r},${g},${b_})`;
+    }
+    const color = lerpColor(colors[t.colorIndex], nextColor, t.colorStep);
+
+    const size = t.baseSize + Math.sin(t.phase)*10;
+    ctx.save();
+    ctx.font = size + "px Arial";
+    ctx.fillStyle = color;
+    ctx.globalAlpha = t.alpha;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#cc66ff";
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+
+    if(t.y < -50){
+        t.y = canvas.height + 50;
+        t.x = Math.random()*canvas.width;
+        t.alpha = 0;
+        t.baseSize = 40 + Math.random()*30;
+    }
+}
+
+function drawBg(t){
+    ctx.save();
+    ctx.font = t.fontSize + "px Arial";
+    ctx.fillStyle = t.color;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = t.color;
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+}
+
+function drawSparkle(s){
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+    ctx.fill();
+    ctx.restore();
+}
+
+function animate(){
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    bgTexts.forEach(t=>{
+        t.y += t.speedY;
+        if(t.y > canvas.height) t.y = -50;
+        drawBg(t);
+    });
+
+    fgTexts.forEach(t=>{
+        t.phase += t.speed;
+        drawFg(t);
+    });
+
+    sparkles.forEach(s=>{
+        s.y -= s.speedY;
+        if(s.y < -10) s.y = canvas.height + 10;
+        drawSparkle(s);
+    });
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
